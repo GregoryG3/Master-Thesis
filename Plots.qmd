@@ -1,0 +1,442 @@
+---
+title: "Plots"
+---
+
+# RQ2 and RQ3: Share of rating types in topics
+
+Load packages:
+
+```{r warning = F, message = F}
+library(ggplot2)
+library(ggpubr)
+library(ggpattern)
+library(grid)
+library(readr)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(cowplot)
+library(gridExtra)
+library(RColorBrewer)
+library(stringr)
+```
+
+Load the data
+
+```{r warning = F, message = F}
+all_topic_share <- read_csv("../Data/Results/df_shares_topic.csv", 
+                            local = locale(encoding = "latin1"))
+```
+
+```{r}
+
+all_topic_share$rating <- factor(all_topic_share$rating, levels = c("All", "Positive", "Neutral", "Negative"))
+
+```
+
+Order the factors:
+
+```{r}
+all_topic_share$rating <- ordered(all_topic_share$rating, levels = c("All",
+                                                                      "Positive",
+                                                                      "Neutral",
+                                                                      "Negative"))
+all_topic_share$topic <- ordered(all_topic_share$topic, 
+                                   levels = c('Communication', 
+                                              'Payment / finalise early',
+                                              'Refunds', 
+                                              'Extras / goodies',
+                                              'Value for money', 
+                                              'Delivery / stealth',
+                                              'Product quality', 
+                                              'Leaving / changing feedback',
+                                              'Vendor quality', 
+                                              'Generic rating', 
+                                              'Overall experience'))
+
+all_topic_share$emo_une <- ordered(all_topic_share$emo_une, levels = c("ALL",
+                                                                       "Emotional",
+                                                                       "Unemotional"))
+
+all_topic_share$share <- round(all_topic_share$share, 1)
+```
+
+```{r}
+plot_all <- ggbarplot(all_topic_share,
+          x = "rating",
+          y = "share",
+          fill = "rating",
+          color = "rating",
+          palette =  c("#1F78B4", "#33A02C", "#FF7F00", "#E31A1C"),
+          sort.by.groups = TRUE,
+          panel.labs = list(emotional = labels),
+          label = all_topic_share$share,
+          lab.size = 2,
+          lab.vjust = -0.3,
+          xlab = "Feedback rating",
+          ylab = "% in",
+          ggtheme = theme_light())+
+                    scale_y_continuous(breaks = seq(0, 100, by = 25)) +
+                    rremove("x.ticks")+
+                    rremove("xlab")+
+                    rremove("x.text")+
+                    ggpubr::font("y.text", size = 6.5)
+
+plot_all <- ggpar(plot_all,
+            ylim = c(0, 113.5),
+            font.y = 7,
+            legend = "bottom",
+            legend.title = "Rating Type: ",
+            font.legend = c(7))+
+                          rremove("x.ticks")+
+                          rremove("xlab")+
+                          rremove("x.text")
+
+```
+
+Save as PDF
+
+```{r}
+# Version 1:
+get_facet <- facet(plot_all,
+      facet.by = c("topic","emo_une"),
+      panel.labs = list(emo_une = c("ALL", "Emotional","Unemotional"),
+                        topic = c('Communication', 
+                                  'Payment /\nfinalise\nearly',
+                                  'Refunds', 
+                                  'Extras /\ngoodies',
+                                  'Value for\nmoney', 
+                                  'Delivery /\nstealth',
+                                  'Product\nquality', 
+                                  'Leaving /\nchanging\nfeedback',
+                                  'Vendor\nquality', 
+                                  'Generic\nrating', 
+                                  'Overall\nexperience')),
+            panel.labs.font = list(size = 6))+
+  theme(legend.key.size = unit(0.3, 'cm'), 
+        legend.key.height = unit(0.3, 'cm'), 
+        legend.key.width = unit(0.3, 'cm'), 
+        legend.title = element_text(face = "bold"),
+        legend.margin = margin(t = -9),  # legend closer to the plot
+        plot.margin = unit(c(0.2, 0.1, 0.05, 0.1), "cm"), #margins (top, right, bottom, left)
+        panel.spacing = unit(0.13, "lines"))  #  space between panels 
+
+
+fig_1 <- annotate_figure(get_facet,
+                 bottom = text_grob(
+                 "Notes: Percentages for rating type All do not add up to a 100%, since topics often co-occur in texts. Robustness checks\ncan be found in the Appendices. However, Positive, Neutral, and Negative ratings within each topic do add up to a 100%.",
+                                    hjust = 0, x = 0.01, size = 5.5))
+
+print(fig_1)
+
+```
+
+```{r}
+pdf("../Results/RQ2_full_v1.pdf",
+     width=4.5, height=8)
+
+fig_1
+
+dev.off()
+```
+
+```{r}
+
+#Version 2:
+
+plot_all <- ggbarplot(all_topic_share,
+          x = "emo_une",
+          y = "share",
+          fill = "emo_une",
+          color = "emo_une",
+          palette =  c("#1f78b4", "#bcbd22", "#FF8C42"  ), 
+          sort.by.groups = TRUE,
+          panel.labs = list(emotional = labels),
+          label = all_topic_share$share,
+          lab.size = 2,
+          lab.vjust = -0.3,
+          xlab = "Feedback emotionality",
+          ylab = "% in",
+          ggtheme = theme_light())+
+                    scale_y_continuous(breaks = seq(0, 100, by = 25)) +
+                    rremove("x.ticks")+
+                    rremove("xlab")+
+                    rremove("x.text")+
+                    ggpubr::font("y.text", size = 6.5)
+
+plot_all <- ggpar(plot_all,
+            ylim = c(0, 113.5),
+            font.y = 7,
+            legend = "bottom",
+            legend.title = "Emotion Categories: ",
+            font.legend = c(7))+
+            rremove("x.ticks")+
+            rremove("xlab")+
+            rremove("x.text")
+
+get_facet <- facet(plot_all,
+      facet.by = c("topic","rating"),
+      panel.labs = list(rating = c("Overall Data", "Positve","Neutral","Negative"),
+                        topic = c('Communication',
+                                  'Payment /\nfinalise\nearly',
+                                  'Refunds',
+                                  'Extras /\ngoodies',
+                                  'Value for\nmoney',
+                                  'Delivery /\nstealth',
+                                  'Product\nquality',
+                                  'Leaving /\nchanging\nfeedback',
+                                  'Vendor\nquality',
+                                  'Generic\nrating',
+                                  'Overall\nexperience')),
+            panel.labs.font = list(size = 6))+
+  theme(legend.key.size = unit(0.3, 'cm'), 
+        legend.key.height = unit(0.3, 'cm'), 
+        legend.key.width = unit(0.3, 'cm'), 
+        legend.title = element_text(face = "bold"),
+        legend.margin = margin(t = -9), 
+        plot.margin = unit(c(0.2, 0.1, 0.05, 0.1), "cm"), #margins (top, right, bottom, left)
+        panel.spacing = unit(0.13, "lines"))  # space between panels
+
+
+fig_1 <- annotate_figure(get_facet,
+                 bottom = text_grob(
+                 "Notes: Percentages for rating type All do not add up to 100%, since  they are calculated based on the entire data set, where topics often co-occur in texts. However,\nPositive, Neutral, and Negative ratings within each topic and emotionality add up to 100%, as they are based on the specific topic and its emotional context.",
+                                    hjust = 0, x = 0.01, size = 5.5))
+
+print(fig_1)
+
+```
+
+```{r}
+pdf("../Results/RQ2_full.pdf",
+     width=6.15, height=8)
+
+fig_1
+
+dev.off()
+```
+
+```{r}
+# Version for Poster - Horizontal
+plot_all <- ggbarplot(all_topic_share,
+          x = "emo_une",
+          y = "share",
+          fill = "emo_une",
+          color = "emo_une",
+          palette =  c("#1f78b4", "#bcbd22", "#FF8C42" ), 
+          sort.by.groups = TRUE,
+          panel.labs = list(emotional = labels),
+          label = all_topic_share$share,
+          lab.size = 2,
+          lab.vjust = -0.3,
+          xlab = "Feedback emotionality",
+          ylab = "% in",
+          ggtheme = theme_light())+
+                    scale_y_continuous(breaks = seq(0, 100, by = 25)) +
+                    rremove("x.ticks")+
+                    rremove("xlab")+
+                    rremove("x.text")+
+                    ggpubr::font("y.text", size = 6.5)
+
+plot_all <- ggpar(plot_all,
+            ylim = c(0, 102),
+            font.y = 7,
+            legend = "bottom",
+            legend.title = "Emotion Categories: ",
+            font.legend = c(7))+
+            rremove("x.ticks")+
+            rremove("xlab")+
+            rremove("x.text")
+
+get_facet <- facet(plot_all,
+      facet.by = c("rating", "topic"),
+      panel.labs = list(rating = c("Overall Data", "Positve","Neutral","Negative"),
+                        topic = c('Communication',
+                                  'Payment /\nfinalise nearly',
+                                  'Refunds',
+                                  'Extras /\ngoodies',
+                                  'Value for\nmoney',
+                                  'Delivery /\nstealth',
+                                  'Product\nquality',
+                                  'Leaving /\nchg. feedback',
+                                  'Vendor\nquality',
+                                  'Generic\nrating',
+                                  'Overall\nexperience')),
+            panel.labs.font = list(size = 6))+
+  theme(legend.key.size = unit(0.3, 'cm'), 
+        legend.key.height = unit(0.3, 'cm'), 
+        legend.key.width = unit(0.3, 'cm'), 
+        legend.title = element_text(face = "bold"),
+        legend.margin = margin(t = -9), 
+        plot.margin = unit(c(0.2, 0.1, 0.05, 0.1), "cm"), 
+        panel.spacing = unit(0.13, "lines"))  
+
+
+fig_1 <- annotate_figure(get_facet,
+                 bottom = text_grob(
+                 "Notes: Percentages for rating type All do not add up to 100%, since  they are calculated based on the entire data set, where topics often co-occur in texts. However, Positive, Neutral, and Negative ratings within each\ntopic and emotionality add up to 100%, as they are based on the specific topic and its emotional context.",
+                                    hjust = 0, x = 0.01, size = 5.5))
+
+print(fig_1)
+
+```
+
+```{r}
+
+png("../Results/RQ2_full.png",
+    width = 8000, height = 6150, res = 1000) 
+fig_1
+
+dev.off()
+
+```
+
+# RQ1: **Category of products shapes the nature of topics**
+
+Load the data
+
+```{r warning = F, message = F}
+mlogit_df <- read_csv("../Data/Results/mlogit_topic_category_final.csv", 
+                            local = locale(encoding = "latin1"))
+```
+
+```{r}
+mlogit_df <- mlogit_df %>%
+   mutate(significant = ifelse(`P>|z|` < 0.05, TRUE, FALSE))
+```
+
+```{r}
+topic_dictionary <- c(
+  't_communication' = 'Communication',
+  't_payment' = 'Payment / finalise early',
+  't_refund' = 'Refunds',
+  't_price' = 'Extras / goodies',
+  't_value' = 'Value for money',
+  't_shipping' = 'Delivery / stealth',
+  't_product' = 'Product quality',
+  't_feedback' = 'Leaving / changing feedback',
+  't_vendor' = 'Vendor quality',
+  't_generic' = 'Generic rating',
+  't_overall' = 'Overall experience'
+)
+
+mlogit_df <- mlogit_df %>%
+  mutate(topic = recode_factor(topic, !!!topic_dictionary),
+         category = str_replace(category, "^category_", ""))
+
+```
+
+```{r}
+dev.new()
+
+colors <- c("#9C755F",
+    "darkblue",
+    "#1f78b4",
+    "#aec7e8",
+    "#E15759",
+    "#E377C2",
+    "#59A14F",
+    "#bcbd22",
+    "#FF8C42",
+    "#FFBB78",
+    "#D4C4A8")
+
+
+
+# Base plot
+plot_rq1 <- ggbarplot(mlogit_df,
+                      x = "topic",
+                      y = "probability",
+                      fill = "topic",
+                      color = NA,  # Ensure no border around bars
+                      palette = colors,
+                      sort.by.groups = TRUE,
+                      panel.labs = list(category = labels),
+                      xlab = "Feedback rating",
+                      ylab = "Probability",
+                      ggtheme = theme_light()) +
+  scale_y_continuous(expand = c(0, 0), breaks = seq(0, 1, by = 0.2)) +
+  rremove("x.ticks") +
+  rremove("xlab") +
+  rremove("x.text") +
+  ggpubr::font("y.text", size = 8.5)
+
+# Add striped pattern for non-significant bars
+plot_rq1 <- plot_rq1 + 
+  geom_bar_pattern(data = mlogit_df[!mlogit_df$significant, ],
+                   aes(x = topic, y = probability, fill = topic), 
+                   pattern = "stripe",
+                   pattern_fill = "black",
+                   pattern_density = 0.1,
+                   pattern_spacing = 0.05,
+                   pattern_angle = 45,
+                   pattern_key_scale_factor = 0.6,
+                   stat = "identity",
+                   position = position_dodge(),
+                   color = NA,  # Ensure no border around patterned bars
+                   show.legend = FALSE) +
+  geom_bar(data = mlogit_df[mlogit_df$significant, ], 
+           aes(x = topic, y = probability, fill = topic),
+           stat = "identity",
+           position = position_dodge(),
+           color = NA)  # Ensure no border around significant bars
+
+# Final adjustments
+plot_rq1 <- ggpar(plot_rq1,
+                  ylim = c(0, 0.699),
+                  font.y = 7,
+                  legend = "bottom",
+                  legend.title = "Topics:",
+                  font.legend = c(7)) +
+  rremove("x.ticks") +
+  rremove("xlab") +
+  rremove("x.text") +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE, order = 1)) +  # Ensure legend is sorted by appearance
+  theme(legend.text = element_text(size = 9), 
+        legend.title = element_text(size = 10, face = "bold"),
+        axis.title.y = element_text(size = 12)) +
+  geom_errorbar(aes(ymin = probability - error, ymax = probability + error), 
+                width = 0.3) +  # Confidence intervals as "whiskers"
+  geom_text(aes(label = round(probability, 2), y = probability + error), 
+            size = 3.5, vjust = -0.3)
+
+# Faceting
+get_facet_rq1 <- facet(plot_rq1,
+                       facet.by = c("category")) +
+  theme(legend.key.size = unit(0.3, 'cm'), 
+        legend.key.height = unit(0.3, 'cm'), 
+        legend.key.width = unit(0.3, 'cm'), 
+        legend.title = element_text(face = "bold"),
+        legend.margin = margin(t = -5), 
+        plot.margin = unit(c(0.15, 0.1, -0.5, 0.1), "cm"),
+        panel.spacing = unit(0.13, "lines"), 
+        strip.text = element_text(size = 12))
+
+# Add striped legend
+striped_legend <- ggplot(data.frame(x = 3.5, y = 1)) +
+  geom_tile_pattern(aes(x = x, y = y), pattern = "stripe", 
+                    pattern_fill = "black", pattern_density = 0.1, 
+                    pattern_angle = 45, pattern_spacing = 0.05, 
+                    fill = "white", color = "black", width = 0.25, height = 0.25) +
+  annotate("text", x = 1.5, y = 1, label = "Not statistically significant (p > 0.05)", size = 3.8, hjust = -0.625, vjust = 0.5) + 
+  xlim(0.5, 10) +
+  ylim(0.5, 1.5) +
+  theme_void() +
+  coord_fixed(ratio = 1) +  
+  theme(plot.margin = unit(c(0, 0, 0, 0), "cm"))
+
+
+# Combine plot and legend
+final_plot <- plot_grid(get_facet_rq1, striped_legend, ncol = 1, rel_heights = c(1, 0.1))
+
+# Print final plot
+print(final_plot)
+
+
+# Save plot to PDF
+pdf("../Results/RQ1_full.pdf",
+    width = 10, height = 8.5)
+print(final_plot)
+dev.off()
+
+```
